@@ -36,9 +36,10 @@ public class ClaudeAiService {
             String questionText,
             List<String> options,
             String userWrong,
-            String correctAnswer
+            String correctAnswer,
+            String lang
     ) {
-        String prompt = buildPrompt(questionText, options, userWrong, correctAnswer);
+        String prompt = buildPrompt(questionText, options, userWrong, correctAnswer, lang);
 
         try {
             Map<String, Object> requestBody = Map.of(
@@ -78,17 +79,30 @@ public class ClaudeAiService {
         }
     }
 
-    private String buildPrompt(String questionText, List<String> options, String userWrong, String correctAnswer) {
+    private String buildPrompt(String questionText, List<String> options, String userWrong, String correctAnswer, String lang) {
+        boolean ky = "KY".equalsIgnoreCase(lang);
         StringBuilder sb = new StringBuilder();
-        sb.append("Ты помощник для подготовки к экзаменам. Объясни, почему ответ неправильный и почему правильный ответ верный.\n\n");
-        sb.append("Вопрос: ").append(questionText).append("\n\n");
-        sb.append("Варианты ответов:\n");
-        for (String opt : options) {
-            sb.append("- ").append(opt).append("\n");
+
+        if (ky) {
+            sb.append("Сен экзаменге даярдануу үчүн жардамчысың. Колдонуучуга \"сен\" деп кайрыл.\n\n");
+            sb.append("Суроо: ").append(questionText).append("\n\n");
+            sb.append("Жооп варианттары:\n");
+            for (String opt : options) sb.append("- ").append(opt).append("\n");
+            sb.append("\nСенин жообуң (туура эмес): ").append(userWrong).append("\n");
+            sb.append("Туура жооп: ").append(correctAnswer).append("\n\n");
+            sb.append("Кыргыз тилинде, \"сен\" деп кайрылып, 2-4 сүйлөм менен түшүндүр: ");
+            sb.append("туура жооп эмне үчүн туура, сен эмне жерде жаңылдың.");
+        } else {
+            sb.append("Ты помощник для подготовки к экзаменам. Обращайся к пользователю на \"ты\".\n\n");
+            sb.append("Вопрос: ").append(questionText).append("\n\n");
+            sb.append("Варианты ответов:\n");
+            for (String opt : options) sb.append("- ").append(opt).append("\n");
+            sb.append("\nТвой ответ (неправильный): ").append(userWrong).append("\n");
+            sb.append("Правильный ответ: ").append(correctAnswer).append("\n\n");
+            sb.append("Объясни на русском языке, обращаясь на \"ты\", 2-4 предложения: ");
+            sb.append("почему правильный ответ верный и где именно ты ошибся.");
         }
-        sb.append("\nОтвет студента (неправильный): ").append(userWrong).append("\n");
-        sb.append("Правильный ответ: ").append(correctAnswer).append("\n\n");
-        sb.append("Дай краткое объяснение (2-4 предложения) на русском языке: почему правильный ответ правильный и в чём ошибка студента.");
+
         return sb.toString();
     }
 }

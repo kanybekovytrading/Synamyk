@@ -186,9 +186,10 @@ public class TestSessionController {
     public ResponseEntity<ErrorAnalysisResponse> analyzeErrors(
             @Parameter(description = "ID сессии") @PathVariable Long sessionId,
             @RequestBody ErrorAnalysisRequest request,
+            @AuthenticationPrincipal UserDetails userDetails,
             Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         request.setSessionId(sessionId);
-        return ResponseEntity.ok(sessionService.analyzeErrors(sessionId, user.getId(), request));
+        return ResponseEntity.ok(sessionService.analyzeErrors(sessionId, user.getId(), request, langResolver.resolve(userDetails)));
     }
 }

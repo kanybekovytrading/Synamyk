@@ -53,6 +53,13 @@ public class TestSessionService {
         if (!resumable.isEmpty()) {
             TestSession session = resumable.get(0);
 
+            // If session was paused, extend expiresAt by the time it was paused
+            if (session.getStatus() == TestSession.SessionStatus.PAUSED && session.getPausedAt() != null) {
+                long pausedSeconds = java.time.Duration.between(session.getPausedAt(), LocalDateTime.now()).getSeconds();
+                session.setExpiresAt(session.getExpiresAt().plusSeconds(pausedSeconds));
+                session.setPausedAt(null);
+            }
+
             // If timer expired, mark as EXPIRED and start fresh
             if (session.isExpired()) {
                 session.setStatus(TestSession.SessionStatus.EXPIRED);
@@ -258,8 +265,14 @@ public class TestSessionService {
     public SessionResultResponse finishSession(Long sessionId, Long userId, String lang) {
         TestSession session = getActiveSession(sessionId, userId);
 
-        long correct = answerRepository.countBySessionIdAndIsCorrectTrue(sessionId);
+        List<UserAnswer> allAnswers = answerRepository.findBySessionIdOrderByQuestionOrderIndex(sessionId);
+        long correct = allAnswers.stream().filter(UserAnswer::getIsCorrect).count();
+        int earned = allAnswers.stream()
+                .filter(UserAnswer::getIsCorrect)
+                .mapToInt(a -> a.getQuestion().getPointValue())
+                .sum();
         session.setCorrectAnswers((int) correct);
+        session.setEarnedPoints(earned);
         session.setStatus(TestSession.SessionStatus.COMPLETED);
         session.setCompletedAt(LocalDateTime.now());
         sessionRepository.save(session);
@@ -274,6 +287,7 @@ public class TestSessionService {
     public void pauseSession(Long sessionId, Long userId) {
         TestSession session = getActiveSession(sessionId, userId);
         session.setStatus(TestSession.SessionStatus.PAUSED);
+        session.setPausedAt(LocalDateTime.now());
         sessionRepository.save(session);
         log.info("Session paused: sessionId={}, currentIndex={}", sessionId, session.getCurrentIndex());
     }
@@ -295,7 +309,7 @@ public class TestSessionService {
     /**
      * AI analysis of selected wrong answers.
      */
-    public ErrorAnalysisResponse analyzeErrors(Long sessionId, Long userId, ErrorAnalysisRequest request) {
+    public ErrorAnalysisResponse analyzeErrors(Long sessionId, Long userId, ErrorAnalysisRequest request, String lang) {
         TestSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new AppException("Сессия не найдена.", "Сессия табылган жок."));
 
@@ -338,7 +352,7 @@ public class TestSessionService {
                     .map(o -> o.getLabel() + ". " + o.getText())
                     .toList();
 
-            String explanation = claudeAiService.explainWrongAnswer(q.getText(), optionTexts, userWrongText, correctText);
+            String explanation = claudeAiService.explainWrongAnswer(q.getText(), optionTexts, userWrongText, correctText, lang);
 
             int questionIndex = questionIndexMap.getOrDefault(q.getId(), 0);
 
@@ -420,7 +434,12 @@ public class TestSessionService {
         long skipped = answers.stream().filter(UserAnswer::getIsSkipped).count();
         long wrong = answers.stream().filter(a -> !a.getIsCorrect() && !a.getIsSkipped()).count();
 
-        int percentage = total > 0 ? (int) ((correct * 100) / total) : 0;
+        int totalPoints = allQuestions.stream().mapToInt(Question::getPointValue).sum();
+        int earnedPoints = session.getEarnedPoints() != null ? session.getEarnedPoints() :
+                answers.stream().filter(UserAnswer::getIsCorrect)
+                        .mapToInt(a -> a.getQuestion().getPointValue()).sum();
+
+        int percentage = totalPoints > 0 ? (earnedPoints * 100) / totalPoints : 0;
 
         long timeTaken = 0;
         if (session.getCompletedAt() != null) {
@@ -450,6 +469,7 @@ public class TestSessionService {
                             .index(idx + 1)
                             .isCorrect(ua.map(UserAnswer::getIsCorrect).orElse(false))
                             .isSkipped(ua.map(UserAnswer::getIsSkipped).orElse(true))
+                            .pointValue(q.getPointValue())
                             .selectedOptionIds(selectedOptionIds)
                             .correctOptionIds(correctOptionIds)
                             .build();
@@ -464,6 +484,8 @@ public class TestSessionService {
                 .correctAnswers((int) correct)
                 .wrongAnswers((int) wrong)
                 .skippedAnswers((int) skipped)
+                .totalPoints(totalPoints)
+                .earnedPoints(earnedPoints)
                 .percentage(percentage)
                 .timeTakenSeconds(timeTaken)
                 .motivationalMessage(motivation)

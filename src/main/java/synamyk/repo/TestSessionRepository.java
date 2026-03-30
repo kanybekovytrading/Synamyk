@@ -15,7 +15,7 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
 
     long countByUserIdAndStatus(Long userId, TestSession.SessionStatus status);
 
-    @Query("SELECT COALESCE(SUM(s.correctAnswers), 0) FROM TestSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED'")
+    @Query("SELECT COALESCE(SUM(s.earnedPoints), 0) FROM TestSession s WHERE s.user.id = :userId AND s.status = 'COMPLETED'")
     long sumCorrectAnswersByUserId(@Param("userId") Long userId);
 
     /** Find active (IN_PROGRESS) session for a user + sub-test. */
@@ -40,12 +40,12 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
             SELECT s.user.id,
                    s.user.firstName,
                    s.user.lastName,
-                   MAX(s.correctAnswers)
+                   MAX(s.earnedPoints)
             FROM TestSession s
             WHERE s.subTest.test.id = :testId
               AND s.status = 'COMPLETED'
             GROUP BY s.user.id, s.user.firstName, s.user.lastName
-            ORDER BY MAX(s.correctAnswers) DESC
+            ORDER BY MAX(s.earnedPoints) DESC
             """)
     List<Object[]> findRankingByTestId(@Param("testId") Long testId);
 
@@ -55,7 +55,7 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
      */
     @Query(value = """
             SELECT DATE(ts.completed_at) AS day,
-                   SUM(ts.correct_answers) AS score
+                   SUM(ts.earned_points) AS score
             FROM test_sessions ts
             WHERE ts.user_id = :userId
               AND ts.status = 'COMPLETED'
@@ -78,7 +78,7 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
      * When testId is null, sums across all tests.
      */
     @Query(value = """
-            SELECT COALESCE(SUM(ts.correct_answers), 0)
+            SELECT COALESCE(SUM(ts.earned_points), 0)
             FROM test_sessions ts
             WHERE ts.user_id = :userId
               AND ts.status = 'COMPLETED'

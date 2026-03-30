@@ -15,6 +15,8 @@ public class SessionResultResponse {
     private Integer correctAnswers;
     private Integer wrongAnswers;
     private Integer skippedAnswers;
+    private Integer totalPoints;
+    private Integer earnedPoints;
     private Integer percentage;
     private Long timeTakenSeconds;
     private String motivationalMessage;
@@ -27,6 +29,7 @@ public class SessionResultResponse {
         private Integer index;          // 1-based for display
         private Boolean isCorrect;
         private Boolean isSkipped;
+        private Integer pointValue;
         private List<Long> selectedOptionIds;
         private List<Long> correctOptionIds;
     }

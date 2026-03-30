@@ -44,6 +44,11 @@ public class TestSession extends BaseEntity {
     @Builder.Default
     private Integer correctAnswers = 0;
 
+    /** Earned points (sum of pointValue for correct answers) — stored on finish. */
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer earnedPoints = 0;
+
     @Column(nullable = false)
     private LocalDateTime startedAt;
 
@@ -53,6 +58,10 @@ public class TestSession extends BaseEntity {
 
     @Column
     private LocalDateTime completedAt;
+
+    /** Set when session is paused; used to extend expiresAt on resume. */
+    @Column
+    private LocalDateTime pausedAt;
 
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserAnswer> answers = new ArrayList<>();
