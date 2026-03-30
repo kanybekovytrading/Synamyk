@@ -8,6 +8,7 @@ import synamyk.config.JwtService;
 import synamyk.dto.AuthResponse;
 import synamyk.entities.RefreshToken;
 import synamyk.entities.User;
+import synamyk.exception.AppException;
 import synamyk.repo.RefreshTokenRepository;
 import synamyk.repo.UserRepository;
 
@@ -42,13 +43,13 @@ public class RefreshTokenService {
     @Transactional
     public AuthResponse refresh(String tokenValue) {
         RefreshToken stored = refreshTokenRepository.findByToken(tokenValue)
-                .orElseThrow(() -> new RuntimeException("Refresh-токен не найден."));
+                .orElseThrow(() -> new AppException("Refresh-токен не найден.", "Refresh-токен табылган жок."));
 
         if (Boolean.TRUE.equals(stored.getRevoked())) {
-            throw new RuntimeException("Refresh-токен отозван.");
+            throw new AppException("Refresh-токен отозван.", "Refresh-токен жокко чыгарылган.");
         }
         if (stored.isExpired()) {
-            throw new RuntimeException("Refresh-токен истёк.");
+            throw new AppException("Refresh-токен истёк.", "Refresh-токендин мөөнөтү өттү.");
         }
 
         User user = stored.getUser();

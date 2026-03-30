@@ -9,6 +9,7 @@ import synamyk.dto.*;
 import synamyk.entities.OTPCode;
 import synamyk.entities.Region;
 import synamyk.entities.User;
+import synamyk.exception.AppException;
 import synamyk.repo.OtpCodeRepository;
 import synamyk.repo.RegionRepository;
 import synamyk.repo.TestSessionRepository;
@@ -75,10 +76,10 @@ public class ProfileService {
         String newPhone = formatPhone(request.getNewPhone());
 
         if (!user.getPhone().equals(oldPhone)) {
-            throw new RuntimeException("Old phone number does not match.");
+            throw new AppException("Старый номер телефона не совпадает.", "Эски номер дал келбейт.");
         }
         if (userRepository.existsByPhone(newPhone)) {
-            throw new RuntimeException("This phone number is already registered.");
+            throw new AppException("Этот номер уже зарегистрирован.", "Бул номер катталган.");
         }
 
         return smsProService.sendOtp(newPhone, OTPCode.OtpType.PHONE_CHANGE);
@@ -93,23 +94,23 @@ public class ProfileService {
         String newPhone = formatPhone(request.getNewPhone());
 
         if (userRepository.existsByPhone(newPhone)) {
-            throw new RuntimeException("This phone number is already registered.");
+            throw new AppException("Этот номер уже зарегистрирован.", "Бул номер катталган.");
         }
 
         List<OTPCode> otpCodes = otpCodeRepository
                 .findByPhoneAndTypeAndVerifiedFalseOrderByCreatedAtDesc(newPhone, OTPCode.OtpType.PHONE_CHANGE);
 
         if (otpCodes.isEmpty()) {
-            throw new RuntimeException("OTP not found or already used.");
+            throw new AppException("OTP не найден или уже использован.", "OTP табылган жок же колдонулган.");
         }
 
         OTPCode otp = otpCodes.get(0);
 
         if (otp.isExpired()) {
-            throw new RuntimeException("OTP has expired. Please request a new code.");
+            throw new AppException("Код OTP истёк. Запросите новый.", "OTP мөөнөтү өттү. Жаңы код суранычы.");
         }
         if (!otp.getCode().equals(request.getCode())) {
-            throw new RuntimeException("Invalid verification code.");
+            throw new AppException("Неверный код подтверждения.", "Туура эмес код.");
         }
 
         otp.setVerified(true);
@@ -128,13 +129,13 @@ public class ProfileService {
     @Transactional
     public MessageResponse changePassword(Long userId, ChangePasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("New passwords do not match.");
+            throw new AppException("Новые пароли не совпадают.", "Жаңы сырсөздөр дал келбейт.");
         }
 
         User user = findUser(userId);
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new RuntimeException("Old password is incorrect.");
+            throw new AppException("Старый пароль неверен.", "Эски сырсөз туура эмес.");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
@@ -147,7 +148,7 @@ public class ProfileService {
     public MessageResponse changeRegion(Long userId, ChangeRegionRequest request) {
         User user = findUser(userId);
         Region region = regionRepository.findById(request.getRegionId())
-                .orElseThrow(() -> new RuntimeException("Region not found."));
+                .orElseThrow(() -> new AppException("Регион не найден.", "Аймак табылган жок."));
         user.setRegion(region);
         userRepository.save(user);
         return MessageResponse.builder().success(true).message("Region updated successfully.").build();
@@ -191,7 +192,7 @@ public class ProfileService {
 
     private User findUser(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() -> new AppException("Пользователь не найден.", "Колдонуучу табылган жок."));
     }
 
     private String formatPhone(String phone) {

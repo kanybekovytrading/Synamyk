@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import synamyk.dto.*;
 import synamyk.entities.*;
+import synamyk.exception.AppException;
 import synamyk.repo.*;
 
 import synamyk.util.L10n;
@@ -37,11 +38,13 @@ public class TestSessionService {
     @Transactional
     public StartSessionResponse startSession(Long subTestId, Long userId, String lang) {
         SubTest subTest = subTestRepository.findById(subTestId)
-                .orElseThrow(() -> new RuntimeException("SubTest not found"));
+                .orElseThrow(() -> new AppException("Подтест не найден.", "Подтест табылган жок."));
 
         // Check access
         if (subTest.getIsPaid() && !accessRepository.existsByUserIdAndTestId(userId, subTest.getTest().getId())) {
-            throw new RuntimeException("Access denied. Please purchase the test first.");
+            throw new AppException(
+                    "Нет доступа. Пожалуйста, приобретите тест.",
+                    "Мүмкүнчүлүк жок. Тестти сатып алыңыз.");
         }
 
         // Look for any resumable session (IN_PROGRESS or PAUSED)
@@ -81,7 +84,7 @@ public class TestSessionService {
                 .findBySubTestIdAndActiveTrueOrderByOrderIndexAsc(subTestId);
 
         if (questions.isEmpty()) {
-            throw new RuntimeException("No questions available for this sub-test.");
+            throw new AppException("В этом подтесте нет вопросов.", "Бул подтестте суроолор жок.");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -124,7 +127,7 @@ public class TestSessionService {
 
         int index = session.getCurrentIndex();
         if (index >= questions.size()) {
-            throw new RuntimeException("No more questions.");
+            throw new AppException("Вопросов больше нет.", "Суроолор аяктады.");
         }
 
         Question question = questions.get(index);
@@ -140,7 +143,7 @@ public class TestSessionService {
                 .findBySubTestIdAndActiveTrueOrderByOrderIndexAsc(session.getSubTest().getId());
 
         if (index < 0 || index >= questions.size()) {
-            throw new RuntimeException("Invalid question index.");
+            throw new AppException("Неверный индекс вопроса.", "Суроонун индекси туура эмес.");
         }
 
         Question question = questions.get(index);
@@ -155,7 +158,7 @@ public class TestSessionService {
         TestSession session = getActiveSession(sessionId, userId);
 
         if (session.isExpired()) {
-            throw new RuntimeException("Session has expired.");
+            throw new AppException("Время сессии истекло.", "Сессиянын мөөнөтү өттү.");
         }
 
         List<Question> questions = questionRepository
@@ -163,14 +166,14 @@ public class TestSessionService {
 
         int currentIndex = session.getCurrentIndex();
         if (currentIndex >= questions.size()) {
-            throw new RuntimeException("All questions already answered.");
+            throw new AppException("Все вопросы уже отвечены.", "Бардык суроолорго жооп берилди.");
         }
 
         Question currentQuestion = questions.get(currentIndex);
 
         // Validate question matches
         if (!currentQuestion.getId().equals(request.getQuestionId())) {
-            throw new RuntimeException("Question mismatch.");
+            throw new AppException("Вопрос не совпадает.", "Суроо дал келбейт.");
         }
 
         // Save/update answer
@@ -195,7 +198,9 @@ public class TestSessionService {
                     .filter(o -> requestedIds.contains(o.getId()))
                     .toList();
             if (selected.size() != requestedIds.size()) {
-                throw new RuntimeException("One or more selected options not found for this question.");
+                throw new AppException(
+                        "Один или несколько выбранных вариантов не найдены.",
+                        "Тандалган жооптордун бири же бирнечеси табылган жок.");
             }
             answer.setSelectedOptions(selected);
 
@@ -278,10 +283,10 @@ public class TestSessionService {
      */
     public SessionResultResponse getResult(Long sessionId, Long userId, String lang) {
         TestSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found"));
+                .orElseThrow(() -> new AppException("Сессия не найдена.", "Сессия табылган жок."));
 
         if (!session.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Access denied.");
+            throw new AppException("Нет доступа.", "Мүмкүнчүлүк жок.");
         }
 
         return buildResult(session, lang);
@@ -292,10 +297,10 @@ public class TestSessionService {
      */
     public ErrorAnalysisResponse analyzeErrors(Long sessionId, Long userId, ErrorAnalysisRequest request) {
         TestSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found"));
+                .orElseThrow(() -> new AppException("Сессия не найдена.", "Сессия табылган жок."));
 
         if (!session.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Access denied.");
+            throw new AppException("Нет доступа.", "Мүмкүнчүлүк жок.");
         }
 
         List<Question> allQuestions = questionRepository
@@ -354,14 +359,16 @@ public class TestSessionService {
 
     private TestSession getActiveSession(Long sessionId, Long userId) {
         TestSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Session not found"));
+                .orElseThrow(() -> new AppException("Сессия не найдена.", "Сессия табылган жок."));
 
         if (!session.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Access denied.");
+            throw new AppException("Нет доступа.", "Мүмкүнчүлүк жок.");
         }
 
         if (session.getStatus() != TestSession.SessionStatus.IN_PROGRESS) {
-            throw new RuntimeException("Session is not active. Status: " + session.getStatus());
+            throw new AppException(
+                    "Сессия неактивна. Статус: " + session.getStatus(),
+                    "Сессия активдүү эмес. Статус: " + session.getStatus());
         }
 
         return session;

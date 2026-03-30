@@ -16,7 +16,7 @@ public class RegionService {
     public List<RegionDto> getAllRegions() {
         return regionRepository.findAll()
                 .stream()
-                .map(r -> new RegionDto(r.getId(), r.getName()))
+                .map(r -> new RegionDto(r.getId(), r.getName(), r.getNameKy()))
                 .toList();
     }
 }

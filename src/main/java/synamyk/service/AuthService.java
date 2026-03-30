@@ -13,6 +13,7 @@ import synamyk.entities.OTPCode;
 import synamyk.entities.Region;
 import synamyk.entities.User;
 import synamyk.enums.Role;
+import synamyk.exception.AppException;
 import synamyk.repo.OtpCodeRepository;
 import synamyk.repo.RegionRepository;
 import synamyk.repo.UserRepository;
@@ -40,13 +41,13 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("Passwords do not match.");
+            throw new AppException("Пароли не совпадают.", "Сырсөздөр дал келбейт.");
         }
 
         String formattedPhone = formatPhone(request.getPhone());
 
         if (userRepository.existsByPhone(formattedPhone)) {
-            throw new RuntimeException("Phone number is already registered.");
+            throw new AppException("Этот номер уже зарегистрирован.", "Бул номер катталган.");
         }
 
         User user = User.builder()
@@ -84,14 +85,16 @@ public class AuthService {
         String formattedPhone = formatPhone(request.getPhone());
 
         User user = userRepository.findByPhone(formattedPhone)
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() -> new AppException("Пользователь не найден.", "Колдонуучу табылган жок."));
 
         if (!user.getPhoneVerified()) {
-            throw new RuntimeException("Phone number is not verified. Please verify your OTP first.");
+            throw new AppException(
+                    "Номер телефона не подтверждён. Пройдите верификацию OTP.",
+                    "Телефон номери тастыкталган жок. OTP аркылуу ырастаңыз.");
         }
 
         Region region = regionRepository.findById(request.getRegionId())
-                .orElseThrow(() -> new RuntimeException("Region not found."));
+                .orElseThrow(() -> new AppException("Регион не найден.", "Аймак табылган жок."));
 
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -119,10 +122,10 @@ public class AuthService {
         );
 
         User user = userRepository.findByPhone(formattedPhone)
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() -> new AppException("Пользователь не найден.", "Колдонуучу табылган жок."));
 
         if (!user.getPhoneVerified()) {
-            throw new RuntimeException("Phone number not verified.");
+            throw new AppException("Номер телефона не подтверждён.", "Телефон номери тастыкталган жок.");
         }
 
         String token = jwtService.generateToken(user, user.getPhone());
@@ -153,10 +156,12 @@ public class AuthService {
                 .filter(otp -> otp.getVerifiedAt() != null)
                 .filter(otp -> otp.getVerifiedAt().isAfter(tenMinutesAgo))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("OTP not verified, already used, or expired."));
+                .orElseThrow(() -> new AppException(
+                        "OTP не подтверждён, уже использован или истёк.",
+                        "OTP тастыкталган жок, колдонулган же мөөнөтү өткөн."));
 
         User user = userRepository.findByPhone(formattedPhone)
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() -> new AppException("Пользователь не найден.", "Колдонуучу табылган жок."));
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import synamyk.dto.admin.*;
 import synamyk.entities.*;
+import synamyk.exception.AppException;
 import synamyk.repo.*;
 
 import java.util.List;
@@ -30,7 +31,7 @@ public class AdminTestService {
 
     public AdminTestResponse getTest(Long testId) {
         Test test = testRepository.findById(testId)
-                .orElseThrow(() -> new RuntimeException("Test not found"));
+                .orElseThrow(() -> new AppException("Тест не найден.", "Тест табылган жок."));
         return toAdminTestResponse(test);
     }
 
@@ -51,7 +52,7 @@ public class AdminTestService {
     @Transactional
     public AdminTestResponse updateTest(Long testId, CreateTestRequest request) {
         Test test = testRepository.findById(testId)
-                .orElseThrow(() -> new RuntimeException("Test not found"));
+                .orElseThrow(() -> new AppException("Тест не найден.", "Тест табылган жок."));
         test.setTitle(request.getTitle());
         test.setTitleKy(request.getTitleKy());
         test.setDescription(request.getDescription());
@@ -64,7 +65,7 @@ public class AdminTestService {
     @Transactional
     public void deleteTest(Long testId) {
         Test test = testRepository.findById(testId)
-                .orElseThrow(() -> new RuntimeException("Test not found"));
+                .orElseThrow(() -> new AppException("Тест не найден.", "Тест табылган жок."));
         test.setActive(false);
         testRepository.save(test);
     }
@@ -76,7 +77,7 @@ public class AdminTestService {
     @Transactional
     public AdminTestResponse updateTestPricing(Long testId, UpdateTestPricingRequest request) {
         Test test = testRepository.findById(testId)
-                .orElseThrow(() -> new RuntimeException("Test not found"));
+                .orElseThrow(() -> new AppException("Тест не найден.", "Тест табылган жок."));
 
         test.setPrice(request.getPrice());
         testRepository.save(test);
@@ -98,7 +99,7 @@ public class AdminTestService {
     @Transactional
     public AdminTestResponse.AdminSubTestResponse createSubTest(Long testId, CreateSubTestRequest request) {
         Test test = testRepository.findById(testId)
-                .orElseThrow(() -> new RuntimeException("Test not found"));
+                .orElseThrow(() -> new AppException("Тест не найден.", "Тест табылган жок."));
 
         SubTest subTest = SubTest.builder()
                 .test(test)
@@ -119,7 +120,7 @@ public class AdminTestService {
     @Transactional
     public AdminTestResponse.AdminSubTestResponse updateSubTest(Long subTestId, CreateSubTestRequest request) {
         SubTest subTest = subTestRepository.findById(subTestId)
-                .orElseThrow(() -> new RuntimeException("SubTest not found"));
+                .orElseThrow(() -> new AppException("Подтест не найден.", "Подтест табылган жок."));
 
         subTest.setTitle(request.getTitle());
         subTest.setTitleKy(request.getTitleKy());
@@ -135,7 +136,7 @@ public class AdminTestService {
     @Transactional
     public void deleteSubTest(Long subTestId) {
         SubTest subTest = subTestRepository.findById(subTestId)
-                .orElseThrow(() -> new RuntimeException("SubTest not found"));
+                .orElseThrow(() -> new AppException("Подтест не найден.", "Подтест табылган жок."));
         subTest.setActive(false);
         subTestRepository.save(subTest);
     }
@@ -151,12 +152,12 @@ public class AdminTestService {
     @Transactional
     public AdminQuestionResponse createQuestion(Long subTestId, CreateQuestionRequest request) {
         SubTest subTest = subTestRepository.findById(subTestId)
-                .orElseThrow(() -> new RuntimeException("SubTest not found"));
+                .orElseThrow(() -> new AppException("Подтест не найден.", "Подтест табылган жок."));
 
         boolean hasCorrect = request.getOptions().stream()
                 .anyMatch(o -> Boolean.TRUE.equals(o.getIsCorrect()));
         if (!hasCorrect) {
-            throw new RuntimeException("At least one option must be marked as correct.");
+            throw new AppException("Хотя бы один вариант должен быть отмечен как правильный.", "Жок дегенде бир туура жооп белгиленүү керек.");
         }
 
         Question question = Question.builder()
@@ -194,7 +195,7 @@ public class AdminTestService {
     @Transactional
     public AdminQuestionResponse updateQuestion(Long questionId, CreateQuestionRequest request) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Question not found"));
+                .orElseThrow(() -> new AppException("Вопрос не найден.", "Суроо табылган жок."));
 
         question.setText(request.getText());
         question.setTextKy(request.getTextKy());
@@ -229,7 +230,7 @@ public class AdminTestService {
     @Transactional
     public void deleteQuestion(Long questionId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Question not found"));
+                .orElseThrow(() -> new AppException("Вопрос не найден.", "Суроо табылган жок."));
         question.setActive(false);
         questionRepository.save(question);
     }
