@@ -40,21 +40,26 @@ public class SubTest extends BaseEntity {
     private String levelNameKy;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer levelOrder = 0;
 
     /**
      * Whether this sub-test requires payment to access.
      */
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isPaid = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer durationMinutes = 30;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @OneToMany(mappedBy = "subTest", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @OrderBy("orderIndex ASC")
+    @Builder.Default
     private List<Question> questions = new ArrayList<>();
 }

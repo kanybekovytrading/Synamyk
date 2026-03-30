@@ -33,6 +33,7 @@ public class OTPCode extends BaseEntity {
     private String token;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean verified = false;
 
     @Builder.Default

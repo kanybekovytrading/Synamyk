@@ -32,8 +32,10 @@ public class AnswerOption extends BaseEntity {
     private String textKy;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isCorrect = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer orderIndex = 0;
 }

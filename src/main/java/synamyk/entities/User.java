@@ -45,9 +45,11 @@ public class  User extends BaseEntity implements UserDetails {
     private Role role = Role.USER;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean phoneVerified = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @Column(columnDefinition = "TEXT")
@@ -58,6 +60,7 @@ public class  User extends BaseEntity implements UserDetails {
 
     /** Interface language preference: RU or KY. */
     @Column(nullable = false, length = 10)
+    @Builder.Default
     private String language = "RU";
 
     /** Unique referral code generated on registration. */

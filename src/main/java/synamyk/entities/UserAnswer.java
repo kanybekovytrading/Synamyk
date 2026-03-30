@@ -38,8 +38,10 @@ public class UserAnswer extends BaseEntity {
     private List<AnswerOption> selectedOptions = new ArrayList<>();
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isCorrect = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isSkipped = false;
 }

@@ -40,12 +40,15 @@ public class Test extends BaseEntity {
      * Price to unlock all paid sub-tests of this test.
      */
     @Column(nullable = false, precision = 10, scale = 2)
+    @Builder.Default
     private BigDecimal price = BigDecimal.ZERO;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @OrderBy("levelOrder ASC")
+    @Builder.Default
     private List<SubTest> subTests = new ArrayList<>();
 }

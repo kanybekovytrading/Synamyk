@@ -52,15 +52,19 @@ public class Question extends BaseEntity {
     private String explanationKy;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer orderIndex = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer pointValue = 1;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @OrderBy("orderIndex ASC")
+    @Builder.Default
     private List<AnswerOption> options = new ArrayList<>();
 }

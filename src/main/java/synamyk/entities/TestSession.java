@@ -31,14 +31,17 @@ public class TestSession extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    @Builder.Default
     private SessionStatus status = SessionStatus.IN_PROGRESS;
 
     /** Index of the current question (0-based). */
     @Column(nullable = false)
+    @Builder.Default
     private Integer currentIndex = 0;
 
     /** Number of correct answers — stored on finish for fast rating queries. */
     @Column(nullable = false)
+    @Builder.Default
     private Integer correctAnswers = 0;
 
     @Column(nullable = false)
