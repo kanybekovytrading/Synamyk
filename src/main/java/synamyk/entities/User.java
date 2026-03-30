@@ -50,6 +50,25 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    @Column(length = 1000)
+    private String avatarUrl;
+
+    /** Interface language preference: RU or KY. */
+    @Column(nullable = false, length = 10)
+    private String language = "RU";
+
+    /** Unique referral code generated on registration. */
+    @Column(length = 20, unique = true)
+    private String referralCode;
+
+    /** The user who referred this user (nullable). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "referred_by_id")
+    private User referredBy;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));

@@ -104,16 +104,17 @@ public class TestSessionController {
     }
 
     /**
-     * Abandon test (user pressed "Да, хочу" in "Прервать тест?" modal).
+     * Pause session (user pressed "Да, хочу" in "Прервать тест?" modal).
+     * Session is saved and can be resumed until the timer expires.
      */
-    @PostMapping("/sessions/{sessionId}/abandon")
-    @Operation(summary = "Abandon the test session")
-    public ResponseEntity<ApiResponse> abandonSession(
+    @PostMapping("/sessions/{sessionId}/pause")
+    @Operation(summary = "Pause session (resumable until timer expires)")
+    public ResponseEntity<ApiResponse> pauseSession(
             @PathVariable Long sessionId,
             Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        sessionService.abandonSession(sessionId, user.getId());
-        return ResponseEntity.ok(new ApiResponse(true, "Session abandoned."));
+        sessionService.pauseSession(sessionId, user.getId());
+        return ResponseEntity.ok(new ApiResponse(true, "Session paused. You can resume later."));
     }
 
     /**

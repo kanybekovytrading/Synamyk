@@ -52,6 +52,7 @@ public class OTPCode extends BaseEntity {
 
     public enum OtpType {
         REGISTRATION,
-        PASSWORD_RESET
+        PASSWORD_RESET,
+        PHONE_CHANGE
     }
 }

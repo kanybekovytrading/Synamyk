@@ -42,19 +42,23 @@ public class TestSessionService {
             throw new RuntimeException("Access denied. Please purchase the test first.");
         }
 
-        // Check for an existing IN_PROGRESS session → resume
-        Optional<TestSession> existingSession = sessionRepository
-                .findByUserIdAndSubTestIdAndStatus(userId, subTestId, TestSession.SessionStatus.IN_PROGRESS);
+        // Look for any resumable session (IN_PROGRESS or PAUSED)
+        List<TestSession> resumable = sessionRepository.findResumable(userId, subTestId);
 
-        if (existingSession.isPresent()) {
-            TestSession session = existingSession.get();
+        if (!resumable.isEmpty()) {
+            TestSession session = resumable.get(0);
 
-            // If expired, mark as expired and create new
+            // If timer expired, mark as EXPIRED and start fresh
             if (session.isExpired()) {
                 session.setStatus(TestSession.SessionStatus.EXPIRED);
                 sessionRepository.save(session);
+                log.info("Session expired: sessionId={}", session.getId());
             } else {
-                log.info("Resuming session: sessionId={}, userId={}", session.getId(), userId);
+                // Resume
+                session.setStatus(TestSession.SessionStatus.IN_PROGRESS);
+                sessionRepository.save(session);
+                log.info("Resuming session: sessionId={}, userId={}, index={}",
+                        session.getId(), userId, session.getCurrentIndex());
                 int total = questionRepository.findBySubTestIdAndActiveTrueOrderByOrderIndexAsc(subTestId).size();
                 return StartSessionResponse.builder()
                         .sessionId(session.getId())
@@ -232,6 +236,9 @@ public class TestSessionService {
     @Transactional
     public SessionResultResponse finishSession(Long sessionId, Long userId) {
         TestSession session = getActiveSession(sessionId, userId);
+
+        long correct = answerRepository.countBySessionIdAndIsCorrectTrue(sessionId);
+        session.setCorrectAnswers((int) correct);
         session.setStatus(TestSession.SessionStatus.COMPLETED);
         session.setCompletedAt(LocalDateTime.now());
         sessionRepository.save(session);
@@ -239,15 +246,15 @@ public class TestSessionService {
     }
 
     /**
-     * Abandon test session.
+     * Pause session (user clicked "Прервать тест?" → "Да, хочу").
+     * Session remains resumable until timer expires.
      */
     @Transactional
-    public void abandonSession(Long sessionId, Long userId) {
+    public void pauseSession(Long sessionId, Long userId) {
         TestSession session = getActiveSession(sessionId, userId);
-        session.setStatus(TestSession.SessionStatus.ABANDONED);
-        session.setCompletedAt(LocalDateTime.now());
+        session.setStatus(TestSession.SessionStatus.PAUSED);
         sessionRepository.save(session);
-        log.info("Session abandoned: sessionId={}", sessionId);
+        log.info("Session paused: sessionId={}, currentIndex={}", sessionId, session.getCurrentIndex());
     }
 
     /**

@@ -37,6 +37,10 @@ public class TestSession extends BaseEntity {
     @Column(nullable = false)
     private Integer currentIndex = 0;
 
+    /** Number of correct answers — stored on finish for fast rating queries. */
+    @Column(nullable = false)
+    private Integer correctAnswers = 0;
+
     @Column(nullable = false)
     private LocalDateTime startedAt;
 
@@ -52,8 +56,9 @@ public class TestSession extends BaseEntity {
 
     public enum SessionStatus {
         IN_PROGRESS,
+        PAUSED,     // user interrupted (can resume)
         COMPLETED,
-        ABANDONED,
+        ABANDONED,  // left permanently (kept for history)
         EXPIRED
     }
 

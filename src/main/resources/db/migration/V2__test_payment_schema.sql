@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS test_sessions
     id              BIGSERIAL PRIMARY KEY,
     user_id         BIGINT      NOT NULL REFERENCES users (id),
     sub_test_id     BIGINT      NOT NULL REFERENCES sub_tests (id),
-    status          VARCHAR(20) NOT NULL DEFAULT 'IN_PROGRESS', -- IN_PROGRESS, COMPLETED, ABANDONED
+    status          VARCHAR(20) NOT NULL DEFAULT 'IN_PROGRESS', -- IN_PROGRESS, PAUSED, COMPLETED, ABANDONED, EXPIRED
     current_index   INT         NOT NULL DEFAULT 0,             -- current question index
     started_at      TIMESTAMP   NOT NULL,
     expires_at      TIMESTAMP   NOT NULL,

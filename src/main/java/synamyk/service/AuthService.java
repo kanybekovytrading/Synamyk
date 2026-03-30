@@ -31,6 +31,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final SmsProService smsService;
+    private final ProfileService profileService;
 
     /**
      * Step 1 of registration: create account with phone + password, send OTP.
@@ -56,6 +57,7 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+        profileService.ensureReferralCode(user);
 
         // Send OTP
         smsService.sendOtp(formattedPhone, OTPCode.OtpType.REGISTRATION);
