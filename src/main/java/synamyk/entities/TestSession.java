@@ -45,7 +45,7 @@ public class TestSession extends BaseEntity {
     private Integer correctAnswers = 0;
 
     /** Earned points (sum of pointValue for correct answers) — stored on finish. */
-    @Column(nullable = false)
+    @Column
     @Builder.Default
     private Integer earnedPoints = 0;
 
