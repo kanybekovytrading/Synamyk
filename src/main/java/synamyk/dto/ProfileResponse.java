@@ -13,7 +13,6 @@ public class ProfileResponse {
     private String bio;
     private String avatarUrl;
     private String language;
-    private String referralCode;
     private Long regionId;
     private String regionName;
 
@@ -21,6 +20,4 @@ public class ProfileResponse {
     private long completedTests;
     /** Sum of correctAnswers across all completed sessions. */
     private long totalScore;
-    /** Number of users referred by this user. */
-    private long referrals;
 }

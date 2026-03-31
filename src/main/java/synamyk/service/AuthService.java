@@ -60,7 +60,6 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
-        profileService.ensureReferralCode(user);
 
         // Send OTP
         smsService.sendOtp(formattedPhone, OTPCode.OtpType.REGISTRATION);

@@ -189,7 +189,6 @@ public class TestSessionController {
             @AuthenticationPrincipal UserDetails userDetails,
             Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        request.setSessionId(sessionId);
         return ResponseEntity.ok(sessionService.analyzeErrors(sessionId, user.getId(), request, langResolver.resolve(userDetails)));
     }
 }

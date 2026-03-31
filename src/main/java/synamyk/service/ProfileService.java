@@ -17,7 +17,6 @@ import synamyk.repo.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -36,7 +35,6 @@ public class ProfileService {
 
         long completedTests = sessionRepository.countByUserIdAndStatus(userId, synamyk.entities.TestSession.SessionStatus.COMPLETED);
         long totalScore = sessionRepository.sumCorrectAnswersByUserId(userId);
-        long referrals = userRepository.countByReferredById(userId);
 
         return ProfileResponse.builder()
                 .id(user.getId())
@@ -46,12 +44,10 @@ public class ProfileService {
                 .bio(user.getBio())
                 .avatarUrl(user.getAvatarUrl())
                 .language(user.getLanguage())
-                .referralCode(user.getReferralCode())
                 .regionId(user.getRegion() != null ? user.getRegion().getId() : null)
                 .regionName(user.getRegion() != null ? user.getRegion().getName() : null)
                 .completedTests(completedTests)
                 .totalScore(totalScore)
-                .referrals(referrals)
                 .build();
     }
 
@@ -173,21 +169,6 @@ public class ProfileService {
         userRepository.save(user);
         log.info("Account soft-deleted for user {}", userId);
         return MessageResponse.builder().success(true).message("Account deleted successfully.").build();
-    }
-
-    /**
-     * Generates a unique 8-character alphanumeric referral code and assigns it to the user.
-     * Called once after registration if the user doesn't have one yet.
-     */
-    @Transactional
-    public void ensureReferralCode(User user) {
-        if (user.getReferralCode() != null) return;
-        String code;
-        do {
-            code = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
-        } while (userRepository.existsByReferralCode(code));
-        user.setReferralCode(code);
-        userRepository.save(user);
     }
 
     private User findUser(Long userId) {

@@ -94,6 +94,16 @@ public class AdminTestService {
         return toAdminTestResponse(test);
     }
 
+    @Transactional
+    public AdminTestResponse.AdminSubTestResponse setSubTestPaid(Long subTestId, boolean paid) {
+        SubTest subTest = subTestRepository.findById(subTestId)
+                .orElseThrow(() -> new AppException("Подтест не найден.", "Подтест табылган жок."));
+        subTest.setIsPaid(paid);
+        subTestRepository.save(subTest);
+        log.info("SubTest {} marked as {}", subTestId, paid ? "PAID" : "FREE");
+        return toAdminSubTestResponse(subTest);
+    }
+
     // ===== SUB-TESTS =====
 
     @Transactional
