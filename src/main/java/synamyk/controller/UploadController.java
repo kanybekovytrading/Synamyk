@@ -50,13 +50,18 @@ public class UploadController {
                 ? String.valueOf(user.getId())
                 : "general";
 
-        String url = minioService.upload(file, type, entityId);
-        return ResponseEntity.ok(UploadResponse.builder().url(url).build());
+        String objectKey = minioService.upload(file, type, entityId);
+        String presignedUrl = minioService.presign(objectKey);
+        return ResponseEntity.ok(UploadResponse.builder()
+                .url(presignedUrl)
+                .objectKey(objectKey)
+                .build());
     }
 
     @Data
     @Builder
     static class UploadResponse {
-        private String url;
+        private String url;        // presigned URL (valid 1 hour) — use for display
+        private String objectKey;  // object key — save this to DB fields (iconUrl, imageUrl, etc.)
     }
 }
