@@ -20,6 +20,7 @@ public class AdminTestService {
     private final SubTestRepository subTestRepository;
     private final QuestionRepository questionRepository;
     private final AnswerOptionRepository optionRepository;
+    private final MinioService minioService;
 
     // ===== TESTS =====
 
@@ -255,7 +256,7 @@ public class AdminTestService {
                 .titleKy(test.getTitleKy())
                 .description(test.getDescription())
                 .descriptionKy(test.getDescriptionKy())
-                .iconUrl(test.getIconUrl())
+                .iconUrl(minioService.presign(test.getIconUrl()))
                 .price(test.getPrice())
                 .active(test.getActive())
                 .subTests(subTests.stream().map(this::toAdminSubTestResponse).toList())
@@ -296,7 +297,7 @@ public class AdminTestService {
                 .sectionNameKy(q.getSectionNameKy())
                 .text(q.getText())
                 .textKy(q.getTextKy())
-                .imageUrl(q.getImageUrl())
+                .imageUrl(minioService.presign(q.getImageUrl()))
                 .explanation(q.getExplanation())
                 .explanationKy(q.getExplanationKy())
                 .orderIndex(q.getOrderIndex())

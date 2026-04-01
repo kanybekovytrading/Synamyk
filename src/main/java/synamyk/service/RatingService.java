@@ -19,6 +19,7 @@ public class RatingService {
 
     private final TestSessionRepository sessionRepository;
     private final TestRepository testRepository;
+    private final MinioService minioService;
 
     /**
      * Returns leaderboard for a specific test.
@@ -77,7 +78,7 @@ public class RatingService {
                         .id(t.getId())
                         .title(L10n.pick(t.getTitle(), t.getTitleKy(), lang))
                         .description(L10n.pick(t.getDescription(), t.getDescriptionKy(), lang))
-                        .iconUrl(t.getIconUrl())
+                        .iconUrl(minioService.presign(t.getIconUrl()))
                         .price(t.getPrice())
                         .subTestCount(0)
                         .build())

@@ -24,6 +24,7 @@ public class TestService {
     private final QuestionRepository questionRepository;
     private final UserTestAccessRepository accessRepository;
     private final TestSessionRepository sessionRepository;
+    private final MinioService minioService;
 
     public List<TestListResponse> getAllTests(String lang) {
         return testRepository.findByActiveTrueOrderByCreatedAtAsc().stream()
@@ -31,7 +32,7 @@ public class TestService {
                         .id(t.getId())
                         .title(L10n.pick(t.getTitle(), t.getTitleKy(), lang))
                         .description(L10n.pick(t.getDescription(), t.getDescriptionKy(), lang))
-                        .iconUrl(t.getIconUrl())
+                        .iconUrl(minioService.presign(t.getIconUrl()))
                         .price(t.getPrice())
                         .subTestCount(subTestRepository
                                 .findByTestIdAndActiveTrueOrderByLevelOrderAsc(t.getId()).size())

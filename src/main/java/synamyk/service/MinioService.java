@@ -1,6 +1,12 @@
 package synamyk.service;
 
-import io.minio.*;
+import io.minio.BucketExistsArgs;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MakeBucketArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
+import io.minio.http.Method;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import synamyk.enums.MediaFileType;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -20,12 +27,6 @@ public class MinioService {
 
     @Value("${minio.bucket}")
     private String bucket;
-
-    @Value("${minio.url}")
-    private String minioUrl;
-
-    @Value("${minio.public-url:${minio.url}}")
-    private String publicUrl;
 
     /**
      * On startup: create bucket if missing and set public-read policy
@@ -38,29 +39,19 @@ public class MinioService {
             if (!exists) {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
                 log.info("Created MinIO bucket: {}", bucket);
+            } else {
+                log.info("MinIO bucket '{}' is ready", bucket);
             }
-            // Public read policy — all objects are readable without auth
-            String policy = """
-                    {
-                      "Version": "2012-10-17",
-                      "Statement": [{
-                        "Effect": "Allow",
-                        "Principal": {"AWS": ["*"]},
-                        "Action": ["s3:GetObject"],
-                        "Resource": ["arn:aws:s3:::%s/*"]
-                      }]
-                    }
-                    """.formatted(bucket);
-            minioClient.setBucketPolicy(SetBucketPolicyArgs.builder().bucket(bucket).config(policy).build());
-            log.info("MinIO bucket '{}' is ready with public-read policy", bucket);
+            // NOTE: public-read access must be enabled via the Tigris/S3 dashboard.
+            // setBucketPolicy is not supported by Tigris (returns NotImplemented).
         } catch (Exception e) {
-            log.error("MinIO init failed: {}", e.getMessage(), e);
+            log.error("MinIO init failed: {}", e.getMessage());
         }
     }
 
     /**
-     * Uploads an image file and returns its permanent public URL.
-     * entityId is used as the folder name (userId, newsId, videoId, etc.).
+     * Uploads an image file and returns the object key (stored in DB).
+     * Use presign(objectKey) to get a time-limited URL for API responses.
      */
     public String upload(MultipartFile file, MediaFileType type, String entityId) {
         validateImage(file);
@@ -81,7 +72,29 @@ public class MinioService {
             throw new RuntimeException("File upload failed: " + e.getMessage());
         }
 
-        return buildPublicUrl(objectKey);
+        return objectKey;
+    }
+
+    /**
+     * Generates a presigned GET URL valid for 1 hour.
+     * Accepts either an object key ("avatars/uuid.jpg") or a legacy full URL.
+     * Returns null if input is null or blank.
+     */
+    public String presign(String keyOrUrl) {
+        if (keyOrUrl == null || keyOrUrl.isBlank()) return null;
+        String objectKey = extractObjectKey(keyOrUrl);
+        try {
+            return minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucket)
+                            .object(objectKey)
+                            .expiry(1, TimeUnit.HOURS)
+                            .build());
+        } catch (Exception e) {
+            log.error("Failed to presign URL for {}: {}", objectKey, e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -108,11 +121,6 @@ public class MinioService {
             case QUESTION_IMAGE  -> "questions";
         };
         return folder + "/" + UUID.randomUUID() + ext;
-    }
-
-    private String buildPublicUrl(String objectKey) {
-        String base = publicUrl.endsWith("/") ? publicUrl : publicUrl + "/";
-        return base + bucket + "/" + objectKey;
     }
 
     private String extractObjectKey(String urlOrKey) {

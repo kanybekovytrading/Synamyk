@@ -31,6 +31,7 @@ public class AnalyticsService {
     private final TestSessionRepository sessionRepository;
     private final TestRepository testRepository;
     private final VideoLessonRepository videoLessonRepository;
+    private final MinioService minioService;
 
     /**
      * Returns chart analytics for the given user.
@@ -170,7 +171,7 @@ public class AnalyticsService {
                 .id(l.getId())
                 .title(L10n.pick(l.getTitle(), l.getTitleKy(), lang))
                 .description(L10n.pick(l.getDescription(), l.getDescriptionKy(), lang))
-                .thumbnailUrl(l.getThumbnailUrl())
+                .thumbnailUrl(minioService.presign(l.getThumbnailUrl()))
                 .videoUrl(l.getVideoUrl())
                 .testId(l.getTest() != null ? l.getTest().getId() : null)
                 .orderIndex(l.getOrderIndex())

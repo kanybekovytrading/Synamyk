@@ -17,6 +17,7 @@ import java.util.List;
 public class NewsService {
 
     private final NewsArticleRepository newsRepository;
+    private final MinioService minioService;
 
     public List<NewsListResponse> getNewsList(String lang) {
         return newsRepository.findByActiveTrueOrderByPublishedAtDesc().stream()
@@ -35,7 +36,7 @@ public class NewsService {
         return NewsDetailResponse.builder()
                 .id(article.getId())
                 .title(L10n.pick(article.getTitle(), article.getTitleKy(), lang))
-                .coverImageUrl(article.getCoverImageUrl())
+                .coverImageUrl(minioService.presign(article.getCoverImageUrl()))
                 .content(L10n.pick(article.getContent(), article.getContentKy(), lang))
                 .publishedAt(article.getPublishedAt())
                 .build();
@@ -85,7 +86,7 @@ public class NewsService {
         return NewsListResponse.builder()
                 .id(a.getId())
                 .title(L10n.pick(a.getTitle(), a.getTitleKy(), lang))
-                .coverImageUrl(a.getCoverImageUrl())
+                .coverImageUrl(minioService.presign(a.getCoverImageUrl()))
                 .preview(preview)
                 .publishedAt(a.getPublishedAt())
                 .build();
@@ -96,7 +97,7 @@ public class NewsService {
         return NewsDetailResponse.builder()
                 .id(a.getId())
                 .title(a.getTitle())
-                .coverImageUrl(a.getCoverImageUrl())
+                .coverImageUrl(minioService.presign(a.getCoverImageUrl()))
                 .content(a.getContent())
                 .publishedAt(a.getPublishedAt())
                 .build();

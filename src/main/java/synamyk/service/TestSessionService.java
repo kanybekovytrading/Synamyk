@@ -31,17 +31,21 @@ public class TestSessionService {
     private final UserAnswerRepository answerRepository;
     private final UserRepository userRepository;
     private final ClaudeAiService claudeAiService;
+    private final MinioService minioService;
 
     /**
      * Start or resume a sub-test session.
      */
     @Transactional
     public StartSessionResponse startSession(Long subTestId, Long userId, String lang) {
+        log.info("startSession: userId={}, subTestId={}", userId, subTestId);
+
         SubTest subTest = subTestRepository.findById(subTestId)
                 .orElseThrow(() -> new AppException("Подтест не найден.", "Подтест табылган жок."));
 
         // Check access
         if (subTest.getIsPaid() && !accessRepository.existsByUserIdAndTestId(userId, subTest.getTest().getId())) {
+            log.warn("Access denied: userId={}, subTestId={} — paid subtest, no access granted", userId, subTestId);
             throw new AppException(
                     "Нет доступа. Пожалуйста, приобретите тест.",
                     "Мүмкүнчүлүк жок. Тестти сатып алыңыз.");
@@ -49,6 +53,7 @@ public class TestSessionService {
 
         // Look for any resumable session (IN_PROGRESS or PAUSED)
         List<TestSession> resumable = sessionRepository.findResumable(userId, subTestId);
+        log.debug("Found {} resumable session(s) for userId={}, subTestId={}", resumable.size(), userId, subTestId);
 
         if (!resumable.isEmpty()) {
             TestSession session = resumable.get(0);
@@ -56,6 +61,7 @@ public class TestSessionService {
             // If session was paused, extend expiresAt by the time it was paused
             if (session.getStatus() == TestSession.SessionStatus.PAUSED && session.getPausedAt() != null) {
                 long pausedSeconds = java.time.Duration.between(session.getPausedAt(), LocalDateTime.now()).getSeconds();
+                log.info("Extending expiresAt by {}s for paused sessionId={}", pausedSeconds, session.getId());
                 session.setExpiresAt(session.getExpiresAt().plusSeconds(pausedSeconds));
                 session.setPausedAt(null);
             }
@@ -91,8 +97,10 @@ public class TestSessionService {
                 .findBySubTestIdAndActiveTrueOrderByOrderIndexAsc(subTestId);
 
         if (questions.isEmpty()) {
+            log.warn("No active questions found for subTestId={}", subTestId);
             throw new AppException("В этом подтесте нет вопросов.", "Бул подтестте суроолор жок.");
         }
+        log.debug("Loaded {} questions for subTestId={}", questions.size(), subTestId);
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiresAt = now.plusMinutes(subTest.getDurationMinutes());
@@ -415,7 +423,7 @@ public class TestSessionService {
                 .totalQuestions(total)
                 .sectionName(L10n.pick(question.getSectionName(), question.getSectionNameKy(), lang))
                 .text(L10n.pick(question.getText(), question.getTextKy(), lang))
-                .imageUrl(question.getImageUrl())
+                .imageUrl(minioService.presign(question.getImageUrl()))
                 .pointValue(question.getPointValue())
                 .options(options)
                 .remainingSeconds(session.getRemainingSeconds())

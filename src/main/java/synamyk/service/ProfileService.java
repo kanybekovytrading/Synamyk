@@ -29,6 +29,7 @@ public class ProfileService {
     private final OtpCodeRepository otpCodeRepository;
     private final PasswordEncoder passwordEncoder;
     private final SmsProService smsProService;
+    private final MinioService minioService;
 
     public ProfileResponse getProfile(Long userId) {
         User user = findUser(userId);
@@ -42,7 +43,7 @@ public class ProfileService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .bio(user.getBio())
-                .avatarUrl(user.getAvatarUrl())
+                .avatarUrl(minioService.presign(user.getAvatarUrl()))
                 .language(user.getLanguage())
                 .regionId(user.getRegion() != null ? user.getRegion().getId() : null)
                 .regionName(user.getRegion() != null ? user.getRegion().getName() : null)
