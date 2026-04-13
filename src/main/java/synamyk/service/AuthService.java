@@ -47,9 +47,49 @@ public class AuthService {
         String formattedPhone = formatPhone(request.getPhone());
 
         if (userRepository.existsByPhone(formattedPhone)) {
-            throw new AppException("Этот номер уже зарегистрирован.", "Бул номер катталган.");
+            User existing = userRepository.findByPhone(formattedPhone).get();
+
+            if (!existing.getPhoneVerified()) {
+                // Случай 1: прошёл только шаг 1 — перезаписываем пароль и шлём новый OTP
+                existing.setPassword(passwordEncoder.encode(request.getPassword()));
+                userRepository.save(existing);
+                smsService.sendOtp(formattedPhone, OTPCode.OtpType.REGISTRATION);
+
+                String token = jwtService.generateToken(existing, existing.getPhone());
+                String refreshToken = refreshTokenService.createRefreshToken(existing).getToken();
+
+                return AuthResponse.builder()
+                        .token(token)
+                        .refreshToken(refreshToken)
+                        .userId(existing.getId())
+                        .phone(existing.getPhone())
+                        .role(existing.getRole().name())
+                        .build();
+
+            } else if (existing.getFirstName() == null) {
+                // Случай 2: прошёл шаг 1 и 2, но не заполнил профиль — проверяем пароль и выдаём токен
+                if (!passwordEncoder.matches(request.getPassword(), existing.getPassword())) {
+                    throw new AppException("Неверный пароль.", "Сырсөз туура эмес.");
+                }
+
+                String token = jwtService.generateToken(existing, existing.getPhone());
+                String refreshToken = refreshTokenService.createRefreshToken(existing).getToken();
+
+                return AuthResponse.builder()
+                        .token(token)
+                        .refreshToken(refreshToken)
+                        .userId(existing.getId())
+                        .phone(existing.getPhone())
+                        .role(existing.getRole().name())
+                        .build();
+
+            } else {
+                // Случай 3: полностью зарегистрирован
+                throw new AppException("Этот номер уже зарегистрирован.", "Бул номер катталган.");
+            }
         }
 
+        // Новый пользователь
         User user = User.builder()
                 .phone(formattedPhone)
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -61,7 +101,6 @@ public class AuthService {
 
         userRepository.save(user);
 
-        // Send OTP
         smsService.sendOtp(formattedPhone, OTPCode.OtpType.REGISTRATION);
 
         String token = jwtService.generateToken(user, user.getPhone());
@@ -75,7 +114,6 @@ public class AuthService {
                 .role(user.getRole().name())
                 .build();
     }
-
     /**
      * Step 3 of registration: save firstName, lastName, region after OTP verification.
      */
