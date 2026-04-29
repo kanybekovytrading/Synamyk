@@ -123,10 +123,16 @@ public class MinioService {
         return folder + "/" + UUID.randomUUID() + ext;
     }
 
+    public String extractKey(String urlOrKey) {
+        return extractObjectKey(urlOrKey);
+    }
+
     private String extractObjectKey(String urlOrKey) {
+        // Strip query params (presigned URLs contain ?X-Amz-... that must not be part of the key)
+        String clean = urlOrKey.contains("?") ? urlOrKey.substring(0, urlOrKey.indexOf('?')) : urlOrKey;
         String marker = "/" + bucket + "/";
-        int idx = urlOrKey.indexOf(marker);
-        return idx >= 0 ? urlOrKey.substring(idx + marker.length()) : urlOrKey;
+        int idx = clean.indexOf(marker);
+        return idx >= 0 ? clean.substring(idx + marker.length()) : clean;
     }
 
     private String getExtension(String filename) {

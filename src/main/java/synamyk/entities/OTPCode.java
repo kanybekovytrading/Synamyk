@@ -47,6 +47,10 @@ public class OTPCode extends BaseEntity {
     @Column
     private LocalDateTime verifiedAt;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer attempts = 0;
+
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
     }

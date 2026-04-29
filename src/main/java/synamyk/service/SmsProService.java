@@ -192,8 +192,17 @@ public class SmsProService {
                     "Код мөөнөтү өттү. Жаңы код суранычы.");
         }
 
+        if (otpCode.getAttempts() >= 5) {
+            log.warn("Too many OTP attempts for phone: {}", formattedPhone);
+            throw new AppException(
+                    "Превышено количество попыток. Запросите новый код.",
+                    "Аракеттер саны ашып кетти. Жаңы код суранычы.");
+        }
+
         if (!otpCode.getCode().equals(request.getCode())) {
-            log.warn("Invalid OTP code for phone: {}", formattedPhone);
+            otpCode.setAttempts(otpCode.getAttempts() + 1);
+            otpCodeRepository.save(otpCode);
+            log.warn("Invalid OTP code for phone: {}, attempts: {}", formattedPhone, otpCode.getAttempts());
             return OtpVerifyResponse.builder()
                     .success(false)
                     .message(ky(lang) ? "Туура эмес код." : "Неверный код подтверждения.")

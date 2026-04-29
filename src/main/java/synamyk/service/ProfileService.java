@@ -58,7 +58,7 @@ public class ProfileService {
         if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
         if (request.getLastName() != null) user.setLastName(request.getLastName());
         if (request.getBio() != null) user.setBio(request.getBio());
-        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
+        if (request.getAvatarUrl() != null) user.setAvatarUrl(minioService.extractKey(request.getAvatarUrl()));
         userRepository.save(user);
         return getProfile(userId);
     }

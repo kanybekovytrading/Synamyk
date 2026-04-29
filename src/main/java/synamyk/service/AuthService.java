@@ -67,9 +67,11 @@ public class AuthService {
                         .build();
 
             } else if (existing.getFirstName() == null) {
-                // Случай 2: телефон подтверждён, но профиль не заполнен — обновляем пароль и выдаём токен
+                // Случай 2: телефон был подтверждён, но профиль не заполнен — повторно верифицируем номер
                 existing.setPassword(passwordEncoder.encode(request.getPassword()));
+                existing.setPhoneVerified(false);
                 userRepository.save(existing);
+                smsService.sendOtp(formattedPhone, OTPCode.OtpType.REGISTRATION);
 
                 String token = jwtService.generateToken(existing, existing.getPhone());
                 String refreshToken = refreshTokenService.createRefreshToken(existing).getToken();
