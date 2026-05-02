@@ -47,7 +47,7 @@ public class OTPCode extends BaseEntity {
     @Column
     private LocalDateTime verifiedAt;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "integer default 0 not null")
     @Builder.Default
     private Integer attempts = 0;
 
